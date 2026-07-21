@@ -187,6 +187,25 @@ def _embedding_for_record(
     return vector, cost
 
 
+def _batch_fully_cached(
+    records: Sequence[dict[str, object]],
+    public_root: Path,
+    cache_root: Path,
+    model: str,
+) -> bool:
+    namespace = cache_root / _cache_namespace(model)
+    if not namespace.exists():
+        return False
+    for record in records:
+        srcset = record.get("srcset")
+        if not isinstance(srcset, dict) or not isinstance(srcset.get("md"), str):
+            return False
+        image_path = public_root / srcset["md"].removeprefix("/")
+        if not (namespace / f"{_content_hash(image_path)}.json").exists():
+            return False
+    return True
+
+
 def _run_model_batch(
     records: Sequence[dict[str, object]],
     public_root: Path,
@@ -271,6 +290,20 @@ def embed_batch(
     if not records:
         raise EmbeddingError("No normalized samples were supplied")
     selected_client = client or OpenRouterClient()
+
+    if _batch_fully_cached(records, public_root, cache_root, fallback_model) and not _batch_fully_cached(
+        records, public_root, cache_root, primary_model
+    ):
+        return _canary_then_batch(
+            records,
+            public_root,
+            cache_root,
+            fallback_model,
+            selected_client,
+            canary_size,
+            max_cost_usd,
+            project_canary_cost=True,
+        )
 
     try:
         return _canary_then_batch(

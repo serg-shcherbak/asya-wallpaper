@@ -3,6 +3,7 @@
 !.env.example
 .DS_Store
 node_modules/
+.pnpm-store/
 .next/
 out/
 playwright-report/
@@ -16,4 +17,3 @@ __pycache__/
 pipeline/cache/
 pipeline/out/
 Обои/
-
