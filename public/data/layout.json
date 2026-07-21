@@ -1,0 +1,350 @@
+[
+  {
+    "id": "sample-bc66fbbd827f",
+    "srcset": {
+      "sm": "/samples/sample-bc66fbbd827f/sm.webp",
+      "md": "/samples/sample-bc66fbbd827f/md.webp",
+      "lg": "/samples/sample-bc66fbbd827f/lg.webp"
+    },
+    "dominantColor": "#668d90",
+    "pos": {
+      "x": 0.02920201,
+      "y": 0.99211472,
+      "z": 0.12188381
+    },
+    "islandId": "island-82f11a5c",
+    "islandAffinity": [
+      {
+        "islandId": "island-82f11a5c",
+        "weight": 0.431005
+      },
+      {
+        "islandId": "island-28c0b195",
+        "weight": 0.288008
+      },
+      {
+        "islandId": "island-59f9c3c7",
+        "weight": 0.280987
+      }
+    ]
+  },
+  {
+    "id": "sample-2af367a3909b",
+    "srcset": {
+      "sm": "/samples/sample-2af367a3909b/sm.webp",
+      "md": "/samples/sample-2af367a3909b/md.webp",
+      "lg": "/samples/sample-2af367a3909b/lg.webp"
+    },
+    "dominantColor": "#dcd7d1",
+    "pos": {
+      "x": -0.05644886,
+      "y": -0.16459444,
+      "z": -0.98474479
+    },
+    "islandId": "island-28c0b195",
+    "islandAffinity": [
+      {
+        "islandId": "island-28c0b195",
+        "weight": 0.485297
+      },
+      {
+        "islandId": "island-82f11a5c",
+        "weight": 0.276124
+      },
+      {
+        "islandId": "island-4fbe5fca",
+        "weight": 0.238579
+      }
+    ]
+  },
+  {
+    "id": "sample-1f6b48138475",
+    "srcset": {
+      "sm": "/samples/sample-1f6b48138475/sm.webp",
+      "md": "/samples/sample-1f6b48138475/md.webp",
+      "lg": "/samples/sample-1f6b48138475/lg.webp"
+    },
+    "dominantColor": "#f3f6fb",
+    "pos": {
+      "x": 0.87223983,
+      "y": 0.33868006,
+      "z": 0.35283634
+    },
+    "islandId": "island-74409a41",
+    "islandAffinity": [
+      {
+        "islandId": "island-74409a41",
+        "weight": 0.592015
+      },
+      {
+        "islandId": "island-82f11a5c",
+        "weight": 0.206512
+      },
+      {
+        "islandId": "island-4fbe5fca",
+        "weight": 0.201473
+      }
+    ]
+  },
+  {
+    "id": "sample-507efb1c009b",
+    "srcset": {
+      "sm": "/samples/sample-507efb1c009b/sm.webp",
+      "md": "/samples/sample-507efb1c009b/md.webp",
+      "lg": "/samples/sample-507efb1c009b/lg.webp"
+    },
+    "dominantColor": "#bbaeae",
+    "pos": {
+      "x": 0.03097449,
+      "y": 0.62611151,
+      "z": 0.77911806
+    },
+    "islandId": "island-82f11a5c",
+    "islandAffinity": [
+      {
+        "islandId": "island-82f11a5c",
+        "weight": 0.397184
+      },
+      {
+        "islandId": "island-4fbe5fca",
+        "weight": 0.318362
+      },
+      {
+        "islandId": "island-59f9c3c7",
+        "weight": 0.284455
+      }
+    ]
+  },
+  {
+    "id": "sample-38c43811de6a",
+    "srcset": {
+      "sm": "/samples/sample-38c43811de6a/sm.webp",
+      "md": "/samples/sample-38c43811de6a/md.webp",
+      "lg": "/samples/sample-38c43811de6a/lg.webp"
+    },
+    "dominantColor": "#5a574b",
+    "pos": {
+      "x": -0.90784389,
+      "y": -0.23694688,
+      "z": -0.34594178
+    },
+    "islandId": "island-4fbe5fca",
+    "islandAffinity": [
+      {
+        "islandId": "island-4fbe5fca",
+        "weight": 0.401102
+      },
+      {
+        "islandId": "island-82f11a5c",
+        "weight": 0.304901
+      },
+      {
+        "islandId": "island-59f9c3c7",
+        "weight": 0.293997
+      }
+    ]
+  },
+  {
+    "id": "sample-78e938ad85fb",
+    "srcset": {
+      "sm": "/samples/sample-78e938ad85fb/sm.webp",
+      "md": "/samples/sample-78e938ad85fb/md.webp",
+      "lg": "/samples/sample-78e938ad85fb/lg.webp"
+    },
+    "dominantColor": "#968e88",
+    "pos": {
+      "x": 0.92367613,
+      "y": -0.08493038,
+      "z": -0.37364325
+    },
+    "islandId": "island-59f9c3c7",
+    "islandAffinity": [
+      {
+        "islandId": "island-59f9c3c7",
+        "weight": 0.370497
+      },
+      {
+        "islandId": "island-4fbe5fca",
+        "weight": 0.316319
+      },
+      {
+        "islandId": "island-82f11a5c",
+        "weight": 0.313184
+      }
+    ]
+  },
+  {
+    "id": "sample-288810455bb2",
+    "srcset": {
+      "sm": "/samples/sample-288810455bb2/sm.webp",
+      "md": "/samples/sample-288810455bb2/md.webp",
+      "lg": "/samples/sample-288810455bb2/lg.webp"
+    },
+    "dominantColor": "#ffffff",
+    "pos": {
+      "x": 0.34533495,
+      "y": -0.60113478,
+      "z": 0.72068083
+    },
+    "islandId": "island-16ffd788",
+    "islandAffinity": [
+      {
+        "islandId": "island-16ffd788",
+        "weight": 0.55155
+      },
+      {
+        "islandId": "island-59f9c3c7",
+        "weight": 0.228604
+      },
+      {
+        "islandId": "island-82f11a5c",
+        "weight": 0.219846
+      }
+    ]
+  },
+  {
+    "id": "sample-ba2f2e466963",
+    "srcset": {
+      "sm": "/samples/sample-ba2f2e466963/sm.webp",
+      "md": "/samples/sample-ba2f2e466963/md.webp",
+      "lg": "/samples/sample-ba2f2e466963/lg.webp"
+    },
+    "dominantColor": "#444f4e",
+    "pos": {
+      "x": 0.15897632,
+      "y": 0.08493038,
+      "z": -0.98362261
+    },
+    "islandId": "island-28c0b195",
+    "islandAffinity": [
+      {
+        "islandId": "island-28c0b195",
+        "weight": 0.392601
+      },
+      {
+        "islandId": "island-59f9c3c7",
+        "weight": 0.358972
+      },
+      {
+        "islandId": "island-82f11a5c",
+        "weight": 0.248427
+      }
+    ]
+  },
+  {
+    "id": "sample-9528901f0198",
+    "srcset": {
+      "sm": "/samples/sample-9528901f0198/sm.webp",
+      "md": "/samples/sample-9528901f0198/md.webp",
+      "lg": "/samples/sample-9528901f0198/lg.webp"
+    },
+    "dominantColor": "#16191e",
+    "pos": {
+      "x": 0.6548689,
+      "y": -0.2002915,
+      "z": -0.72871816
+    },
+    "islandId": "island-59f9c3c7",
+    "islandAffinity": [
+      {
+        "islandId": "island-59f9c3c7",
+        "weight": 0.461456
+      },
+      {
+        "islandId": "island-28c0b195",
+        "weight": 0.274597
+      },
+      {
+        "islandId": "island-4fbe5fca",
+        "weight": 0.263947
+      }
+    ]
+  },
+  {
+    "id": "sample-ed48b61d66e7",
+    "srcset": {
+      "sm": "/samples/sample-ed48b61d66e7/sm.webp",
+      "md": "/samples/sample-ed48b61d66e7/md.webp",
+      "lg": "/samples/sample-ed48b61d66e7/lg.webp"
+    },
+    "dominantColor": "#d3ceba",
+    "pos": {
+      "x": -0.25834569,
+      "y": 0.93639565,
+      "z": 0.23753053
+    },
+    "islandId": "island-82f11a5c",
+    "islandAffinity": [
+      {
+        "islandId": "island-82f11a5c",
+        "weight": 0.468504
+      },
+      {
+        "islandId": "island-59f9c3c7",
+        "weight": 0.267763
+      },
+      {
+        "islandId": "island-28c0b195",
+        "weight": 0.263733
+      }
+    ]
+  },
+  {
+    "id": "sample-3e2ff9c81a62",
+    "srcset": {
+      "sm": "/samples/sample-3e2ff9c81a62/sm.webp",
+      "md": "/samples/sample-3e2ff9c81a62/md.webp",
+      "lg": "/samples/sample-3e2ff9c81a62/lg.webp"
+    },
+    "dominantColor": "#465150",
+    "pos": {
+      "x": 0.60602301,
+      "y": 0.58123964,
+      "z": -0.54304385
+    },
+    "islandId": "island-59f9c3c7",
+    "islandAffinity": [
+      {
+        "islandId": "island-59f9c3c7",
+        "weight": 0.412624
+      },
+      {
+        "islandId": "island-28c0b195",
+        "weight": 0.34123
+      },
+      {
+        "islandId": "island-82f11a5c",
+        "weight": 0.246147
+      }
+    ]
+  },
+  {
+    "id": "sample-6020a124cfd3",
+    "srcset": {
+      "sm": "/samples/sample-6020a124cfd3/sm.webp",
+      "md": "/samples/sample-6020a124cfd3/md.webp",
+      "lg": "/samples/sample-6020a124cfd3/lg.webp"
+    },
+    "dominantColor": "#d9e1d5",
+    "pos": {
+      "x": -0.85298645,
+      "y": -0.52193314,
+      "z": -7e-08
+    },
+    "islandId": "island-4fbe5fca",
+    "islandAffinity": [
+      {
+        "islandId": "island-4fbe5fca",
+        "weight": 0.474385
+      },
+      {
+        "islandId": "island-28c0b195",
+        "weight": 0.264641
+      },
+      {
+        "islandId": "island-82f11a5c",
+        "weight": 0.260973
+      }
+    ]
+  }
+]

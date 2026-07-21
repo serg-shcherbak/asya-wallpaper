@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "islands": [
+    {
+      "id": "island-16ffd788",
+      "anchors": [
+        "sample-288810455bb2"
+      ]
+    },
+    {
+      "id": "island-28c0b195",
+      "anchors": [
+        "sample-2af367a3909b"
+      ]
+    },
+    {
+      "id": "island-4fbe5fca",
+      "anchors": [
+        "sample-38c43811de6a"
+      ]
+    },
+    {
+      "id": "island-59f9c3c7",
+      "anchors": [
+        "sample-3e2ff9c81a62"
+      ]
+    },
+    {
+      "id": "island-74409a41",
+      "anchors": [
+        "sample-1f6b48138475"
+      ]
+    },
+    {
+      "id": "island-82f11a5c",
+      "anchors": [
+        "sample-507efb1c009b"
+      ]
+    }
+  ]
+}
