@@ -50,29 +50,53 @@ def _validate_release(public_root: Path) -> tuple[list[dict[str, object]], list[
     return layout, islands
 
 
-def _publish_release(staged_public: Path, public_root: Path, backup_root: Path) -> None:
+def _remove_path(path: Path) -> None:
+    if path.is_dir() and not path.is_symlink():
+        shutil.rmtree(path)
+    elif path.exists() or path.is_symlink():
+        path.unlink()
+
+
+def _publish_release(
+    staged_public: Path,
+    public_root: Path,
+    staged_registry: Path,
+    registry_path: Path,
+    backup_root: Path,
+) -> None:
+    """Install a release and its stable-ID registry, rolling both back on failure."""
     public_root.mkdir(parents=True, exist_ok=True)
-    installed: list[str] = []
-    backed_up: list[str] = []
+    registry_path.parent.mkdir(parents=True, exist_ok=True)
+    backup_root.mkdir(parents=True, exist_ok=True)
+    names = ("samples", "data", "share")
+    registry_backup = backup_root / "island_ids.json"
     try:
-        for name in ("samples", "data", "share"):
+        for name in names:
             destination = public_root / name
             backup = backup_root / name
             if destination.exists():
-                backup.parent.mkdir(parents=True, exist_ok=True)
                 os.replace(destination, backup)
-                backed_up.append(name)
             os.replace(staged_public / name, destination)
-            installed.append(name)
+        if registry_path.exists():
+            os.replace(registry_path, registry_backup)
+        os.replace(staged_registry, registry_path)
     except Exception:
-        for name in reversed(installed):
+        # A successful os.replace can still be followed by an injected exception,
+        # so derive rollback state from the staging and backup paths rather than
+        # relying on bookkeeping after each call.
+        if registry_backup.exists():
+            _remove_path(registry_path)
+            os.replace(registry_backup, registry_path)
+        elif not staged_registry.exists():
+            _remove_path(registry_path)
+        for name in reversed(names):
             destination = public_root / name
-            if destination.is_dir():
-                shutil.rmtree(destination)
-            elif destination.exists():
-                destination.unlink()
-        for name in reversed(backed_up):
-            os.replace(backup_root / name, public_root / name)
+            backup = backup_root / name
+            if backup.exists():
+                _remove_path(destination)
+                os.replace(backup, destination)
+            elif not (staged_public / name).exists():
+                _remove_path(destination)
         raise
 
 
@@ -153,9 +177,13 @@ def run_pipeline(
             staged_public / "share",
         )
         _validate_release(staged_public)
-        _publish_release(staged_public, public_root, staging_root / "backup")
-        registry_path.parent.mkdir(parents=True, exist_ok=True)
-        os.replace(staged_registry, registry_path)
+        _publish_release(
+            staged_public,
+            public_root,
+            staged_registry,
+            registry_path,
+            staging_root / "backup",
+        )
 
     return PipelineResult(
         sample_count=len(records),

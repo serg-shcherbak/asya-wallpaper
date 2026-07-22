@@ -3,6 +3,7 @@ import layoutFixture from "../__fixtures__/layout.sample.json";
 import islandFixture from "../__fixtures__/islands.sample.json";
 import {
   DataContractError,
+  DATA_FETCH_TIMEOUT_MS,
   loadPlanetariumData,
   parseSamples,
   resolveSampleAsset,
@@ -44,5 +45,41 @@ describe("planetarium data contract", () => {
   it("turns a failed fetch into a top-level contract error", async () => {
     const fetcher = vi.fn<typeof fetch>().mockRejectedValue(new Error("offline"));
     await expect(loadPlanetariumData(fetcher)).rejects.toThrow("Could not load");
+  });
+
+  it("aborts stalled static-data requests and reports the existing load error", async () => {
+    vi.useFakeTimers();
+    const fetcher = vi.fn<typeof fetch>().mockImplementation((_url, init) =>
+      new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
+      }),
+    );
+
+    const loading = loadPlanetariumData(fetcher);
+    const rejection = expect(loading).rejects.toThrow("Could not load /data/layout.json");
+    await vi.advanceTimersByTimeAsync(DATA_FETCH_TIMEOUT_MS);
+
+    await rejection;
+    const signals = fetcher.mock.calls.map(([, init]) => init?.signal);
+    expect(signals).toHaveLength(2);
+    expect(signals.every((signal) => signal?.aborted)).toBe(true);
+    vi.useRealTimers();
+  });
+
+  it("keeps the timeout active while a response body is being parsed", async () => {
+    vi.useFakeTimers();
+    const fetcher = vi.fn<typeof fetch>().mockImplementation(async () =>
+      ({
+        ok: true,
+        json: () => new Promise<never>(() => undefined),
+      }) as unknown as Response,
+    );
+
+    const loading = loadPlanetariumData(fetcher);
+    const rejection = expect(loading).rejects.toThrow("Could not load /data/layout.json");
+    await vi.advanceTimersByTimeAsync(DATA_FETCH_TIMEOUT_MS);
+
+    await rejection;
+    vi.useRealTimers();
   });
 });

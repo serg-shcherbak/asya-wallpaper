@@ -20,7 +20,9 @@ const selectionCreator = (threshold: number) =>
         const selectedIds = exists
           ? state.selectedIds.filter((id) => id !== sampleId)
           : [...state.selectedIds, sampleId];
-        return { selectedIds, revealOpen: !exists && selectedIds.length >= threshold };
+        const crossedThreshold =
+          !exists && state.selectedIds.length < threshold && selectedIds.length >= threshold;
+        return { selectedIds, revealOpen: crossedThreshold };
       }),
     dismissReveal: () => set(() => ({ revealOpen: false })),
     reset: () => set(() => ({ selectedIds: [], revealOpen: false })),

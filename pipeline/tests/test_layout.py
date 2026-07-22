@@ -37,6 +37,33 @@ class FakeClient:
         return vector, 0.0, model
 
 
+class PaidFallbackClient(FakeClient):
+    def __init__(self, costs: list[object]) -> None:
+        super().__init__(fail_primary=True)
+        self.costs = iter(costs)
+
+    def embed_image(self, image_path: Path, model: str):
+        vector, _cost, response_model = super().embed_image(image_path, model)
+        if model == FALLBACK_MODEL:
+            return vector, next(self.costs), response_model
+        return vector, 0.0, response_model
+
+
+class LatePrimaryFailureClient(FakeClient):
+    def __init__(self, fail_on_primary_call: int) -> None:
+        super().__init__()
+        self.fail_on_primary_call = fail_on_primary_call
+        self.primary_calls = 0
+
+    def embed_image(self, image_path: Path, model: str):
+        if model == PRIMARY_MODEL:
+            self.primary_calls += 1
+            if self.primary_calls == self.fail_on_primary_call:
+                self.calls.append(model)
+                raise ModelUnavailable("primary became unavailable")
+        return super().embed_image(image_path, model)
+
+
 class FakeResponse:
     def __init__(self, status_code: int, body: dict[str, object] | None = None) -> None:
         self.status_code = status_code
@@ -131,6 +158,79 @@ def test_fallback_cost_cap_stops_before_paid_batch(tmp_path: Path) -> None:
         )
 
     assert FALLBACK_MODEL not in client.calls
+
+
+def test_paid_fallback_rejects_missing_or_invalid_usage_cost(tmp_path: Path) -> None:
+    image_path = tmp_path / "image.webp"
+    Image.new("RGB", (4, 4)).save(image_path)
+
+    for usage in ({}, {"cost": None}, {"cost": "0"}, {"cost": -0.01}, {"cost": float("nan")}, []):
+        session = SequenceSession(
+            [
+                FakeResponse(
+                    200,
+                    {
+                        "model": FALLBACK_MODEL,
+                        "data": [{"embedding": [0.1, 0.2]}],
+                        "usage": usage,
+                    },
+                )
+            ]
+        )
+
+        with pytest.raises(EmbeddingError, match="usage.cost"):
+            OpenRouterClient("test-key", session=session).embed_image(image_path, FALLBACK_MODEL)
+
+
+def test_canary_projection_blocks_paid_fallback_over_cap(tmp_path: Path) -> None:
+    records, public_root = make_records(tmp_path)
+    client = PaidFallbackClient([0.06, 0.06])
+
+    with pytest.raises(PaidLimitExceeded, match="Canary projects"):
+        embed_batch(
+            records,
+            public_root,
+            tmp_path / "cache",
+            client=client,
+            canary_size=2,
+            max_cost_usd=0.15,
+        )
+
+    assert client.calls.count(FALLBACK_MODEL) == 2
+
+
+def test_observed_paid_cost_cap_stops_accumulated_fallback_cost(tmp_path: Path) -> None:
+    records, public_root = make_records(tmp_path)
+    client = PaidFallbackClient([0.0, 0.25, 0.25])
+
+    with pytest.raises(PaidLimitExceeded, match="Observed OpenRouter cost"):
+        embed_batch(
+            records,
+            public_root,
+            tmp_path / "cache",
+            client=client,
+            canary_size=1,
+            max_cost_usd=0.45,
+        )
+
+    assert client.calls.count(FALLBACK_MODEL) == 3
+
+
+def test_late_primary_failure_recomputes_every_record_with_fallback(tmp_path: Path) -> None:
+    records, public_root = make_records(tmp_path)
+    client = LatePrimaryFailureClient(fail_on_primary_call=4)
+
+    result = embed_batch(
+        records,
+        public_root,
+        tmp_path / "cache",
+        client=client,
+        canary_size=2,
+    )
+
+    assert result.model == FALLBACK_MODEL
+    assert client.calls.count(FALLBACK_MODEL) == len(records)
+    assert set(result.vector_models.values()) == {FALLBACK_MODEL}
 
 
 def test_mismatched_embedding_dimensions_fail_closed(tmp_path: Path) -> None:

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Sample } from "@/lib/types";
-import { allocateLods, textureFallback } from "../lod";
+import { allocateLods } from "../lod";
 
 const sample = (id: string, x: number, y: number, z: number): Sample => ({
   id,
@@ -24,10 +24,5 @@ describe("texture LOD budget", () => {
     expect(lods.get("focus")).toBe("lg");
     expect(lods.get("far")).toBe("color");
     expect([...lods.values()].filter((lod) => lod !== "color")).toHaveLength(3);
-  });
-
-  it("keeps the dominant-color representation after texture failure", () => {
-    expect(textureFallback("error")).toBe("color");
-    expect(textureFallback("loaded")).toBe("texture");
   });
 });

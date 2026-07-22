@@ -1,5 +1,7 @@
 import type { Island, PlanetariumData, Sample, SampleSources, Vector3 } from "./types";
 
+export const DATA_FETCH_TIMEOUT_MS = 10_000;
+
 export class DataContractError extends Error {
   constructor(message: string, options?: ErrorOptions) {
     super(message, options);
@@ -86,18 +88,33 @@ export function parseIslands(value: unknown): Island[] {
 
 async function fetchJson(url: string, fetcher: typeof fetch): Promise<unknown> {
   let response: Response;
+  const controller = new AbortController();
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const timeoutError = new Promise<never>((_, reject) => {
+    timeout = setTimeout(() => {
+      controller.abort();
+      reject(new Error(`Timed out loading ${url}`));
+    }, DATA_FETCH_TIMEOUT_MS);
+  });
   try {
-    response = await fetcher(url);
-  } catch (error) {
-    throw new DataContractError(`Could not load ${url}`, { cause: error });
-  }
-  if (!response.ok) {
-    throw new DataContractError(`Could not load ${url} (HTTP ${response.status})`);
-  }
-  try {
-    return await response.json();
-  } catch (error) {
-    throw new DataContractError(`${url} is not valid JSON`, { cause: error });
+    try {
+      response = await Promise.race([fetcher(url, { signal: controller.signal }), timeoutError]);
+    } catch (error) {
+      throw new DataContractError(`Could not load ${url}`, { cause: error });
+    }
+    if (!response.ok) {
+      throw new DataContractError(`Could not load ${url} (HTTP ${response.status})`);
+    }
+    try {
+      return await Promise.race([response.json(), timeoutError]);
+    } catch (error) {
+      if (controller.signal.aborted) {
+        throw new DataContractError(`Could not load ${url}`, { cause: error });
+      }
+      throw new DataContractError(`${url} is not valid JSON`, { cause: error });
+    }
+  } finally {
+    if (timeout !== undefined) clearTimeout(timeout);
   }
 }
 

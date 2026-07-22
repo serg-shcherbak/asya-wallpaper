@@ -22,6 +22,26 @@ export const applyDamping = (value: number, factor: number) => {
 
 type Intent = { yaw: number; pitch: number; zoom: number };
 
+const INTERACTIVE_TARGET_SELECTOR = [
+  "a[href]",
+  "button",
+  "input",
+  "select",
+  "textarea",
+  '[contenteditable]:not([contenteditable="false"])',
+  '[role="button"]',
+  '[role="link"]',
+  '[role="checkbox"]',
+  '[role="radio"]',
+  '[role="switch"]',
+  '[role="tab"]',
+  '[role="menuitem"]',
+].join(",");
+
+export function isInteractiveTarget(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest(INTERACTIVE_TARGET_SELECTOR) !== null;
+}
+
 export function keyIntent(key: string): Intent | null {
   const normalized = key.toLowerCase();
   if (normalized === "arrowleft" || normalized === "a") return { yaw: 1, pitch: 0, zoom: 0 };
@@ -113,6 +133,7 @@ export function ViewControls({ samples, onFocusChange, onEnter, reducedMotion = 
     };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Enter") {
+        if (isInteractiveTarget(event.target)) return;
         onEnter();
         consumeHint();
         return;

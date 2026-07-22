@@ -263,6 +263,8 @@ a:focus-visible {
   inset: 0;
   display: grid;
   place-items: center;
+  align-content: center;
+  gap: 18px;
   background: radial-gradient(circle, #17131a 0, var(--ink) 64%);
 }
 
@@ -287,6 +289,15 @@ a:focus-visible {
   background-size: cover;
   box-shadow: 0 14px 45px rgb(0 0 0 / 35%);
   transition: transform 220ms ease, border-color 220ms ease;
+  overflow: hidden;
+  padding: 0;
+}
+
+.fallback-sample img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .fallback-sample:hover,
@@ -298,6 +309,11 @@ a:focus-visible {
 .fallback-sample[aria-pressed="true"] {
   transform: scale(1.18) rotate(3deg);
   border-color: var(--accent);
+}
+
+.fallback-load-more {
+  position: relative;
+  z-index: 1;
 }
 
 .data-error p {

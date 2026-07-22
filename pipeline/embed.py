@@ -4,6 +4,7 @@ import base64
 import hashlib
 import json
 import mimetypes
+import math
 import os
 import time
 from dataclasses import dataclass
@@ -15,7 +16,12 @@ import requests
 PRIMARY_MODEL = "nvidia/llama-nemotron-embed-vl-1b-v2:free"
 FALLBACK_MODEL = "google/gemini-embedding-2"
 OPENROUTER_EMBEDDINGS_URL = "https://openrouter.ai/api/v1/embeddings"
-FALLBACK_IMAGE_PRICE_USD = 0.00000045
+# Gemini embedding image input is priced per million image tokens, not per image.
+# Normalized inputs are square and 640px by default. Google's documented image
+# tiling charges four 258-token tiles for that shape, so reserve the full 1,032
+# tokens before each paid request; usage metadata remains the source of actual cost.
+FALLBACK_IMAGE_TOKEN_PRICE_USD = 0.00000045
+FALLBACK_IMAGE_TOKEN_BOUND = 1032
 
 
 class EmbeddingError(RuntimeError):
@@ -123,8 +129,12 @@ class OpenRouterClient:
         response_model = str(body.get("model") or model)
         if not _same_model(response_model, model):
             raise EmbeddingError(f"OpenRouter served an unexpected embedding model: {response_model}")
-        usage = body.get("usage") or {}
-        cost = float(usage.get("cost") or 0.0)
+        usage = body.get("usage")
+        raw_cost = usage.get("cost") if isinstance(usage, dict) else None
+        if _is_free_model(model):
+            cost = _valid_cost(raw_cost, missing_default=0.0)
+        else:
+            cost = _valid_cost(raw_cost)
         return [float(value) for value in vector], cost, response_model
 
 
@@ -138,6 +148,21 @@ def _same_model(response_model: str, requested_model: str) -> bool:
     return response in {requested, requested.rsplit("/", 1)[-1]}
 
 
+def _is_free_model(model: str) -> bool:
+    return model.casefold().endswith(":free")
+
+
+def _valid_cost(value: object, *, missing_default: float | None = None) -> float:
+    if value is None and missing_default is not None:
+        return missing_default
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise EmbeddingError("OpenRouter returned missing or invalid usage.cost for a paid embedding")
+    cost = float(value)
+    if not math.isfinite(cost) or cost < 0:
+        raise EmbeddingError("OpenRouter returned missing or invalid usage.cost for a paid embedding")
+    return cost
+
+
 def _cache_namespace(model: str) -> str:
     return model.replace("/", "--").replace(":", "--")
 
@@ -147,7 +172,9 @@ def _content_hash(path: Path) -> str:
 
 
 def estimate_fallback_cost(_model: str, count: int) -> float:
-    return FALLBACK_IMAGE_PRICE_USD * count
+    if count < 0:
+        raise ValueError("Embedding count cannot be negative")
+    return FALLBACK_IMAGE_TOKEN_PRICE_USD * FALLBACK_IMAGE_TOKEN_BOUND * count
 
 
 def _embedding_for_record(
@@ -156,6 +183,8 @@ def _embedding_for_record(
     cache_root: Path,
     model: str,
     client: EmbeddingClient,
+    *,
+    require_observed_cost: bool,
 ) -> tuple[list[float], float]:
     srcset = record["srcset"]
     if not isinstance(srcset, dict) or not isinstance(srcset.get("md"), str):
@@ -173,6 +202,8 @@ def _embedding_for_record(
         return [float(value) for value in cached["embedding"]], 0.0
 
     vector, cost, response_model = client.embed_image(image_path, model)
+    if require_observed_cost:
+        cost = _valid_cost(cost)
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     cache_path.write_text(
         json.dumps(
@@ -188,6 +219,17 @@ def _embedding_for_record(
         encoding="utf-8",
     )
     return vector, cost
+
+
+def _record_is_cached(
+    record: dict[str, object], public_root: Path, cache_root: Path, model: str
+) -> bool:
+    srcset = record.get("srcset")
+    if not isinstance(srcset, dict) or not isinstance(srcset.get("md"), str):
+        return False
+    image_path = public_root / srcset["md"].removeprefix("/")
+    cache_path = cache_root / _cache_namespace(model) / f"{_content_hash(image_path)}.json"
+    return cache_path.exists()
 
 
 def _batch_fully_cached(
@@ -217,12 +259,28 @@ def _run_model_batch(
     client: EmbeddingClient,
     max_cost_usd: float,
     expected_dimension: int | None = None,
+    paid_request_cost_bound: float | None = None,
 ) -> EmbeddingBatch:
     vectors: dict[str, list[float]] = {}
     total_cost = 0.0
     dimension = expected_dimension
     for record in records:
-        vector, cost = _embedding_for_record(record, public_root, cache_root, model, client)
+        if (
+            paid_request_cost_bound is not None
+            and not _record_is_cached(record, public_root, cache_root, model)
+            and total_cost + paid_request_cost_bound > max_cost_usd
+        ):
+            raise PaidLimitExceeded(
+                f"Conservative {model} request bound would exceed ${max_cost_usd:.4f} cap"
+            )
+        vector, cost = _embedding_for_record(
+            record,
+            public_root,
+            cache_root,
+            model,
+            client,
+            require_observed_cost=paid_request_cost_bound is not None,
+        )
         if dimension is None:
             dimension = len(vector)
         elif len(vector) != dimension:
@@ -253,6 +311,7 @@ def _canary_then_batch(
     max_cost_usd: float,
     *,
     project_canary_cost: bool = False,
+    paid_request_cost_bound: float | None = None,
 ) -> EmbeddingBatch:
     canary_records = records[: max(1, min(canary_size, len(records)))]
     canary = _run_model_batch(
@@ -262,6 +321,7 @@ def _canary_then_batch(
         model,
         client,
         max_cost_usd,
+        paid_request_cost_bound=paid_request_cost_bound,
     )
     if project_canary_cost and canary.cost_usd > 0:
         projected_cost = canary.cost_usd / len(canary_records) * len(records)
@@ -282,6 +342,7 @@ def _canary_then_batch(
         client,
         remaining_cap,
         expected_dimension=canary_dimension,
+        paid_request_cost_bound=paid_request_cost_bound,
     )
     return EmbeddingBatch(
         model=remainder.model,
@@ -306,6 +367,10 @@ def embed_batch(
     if not records:
         raise EmbeddingError("No normalized samples were supplied")
     selected_client = client or OpenRouterClient()
+    paid_fallback = not _is_free_model(fallback_model)
+    fallback_request_bound = (
+        estimate_fallback_cost(fallback_model, 1) if paid_fallback else None
+    )
 
     if _batch_fully_cached(records, public_root, cache_root, fallback_model) and not _batch_fully_cached(
         records, public_root, cache_root, primary_model
@@ -319,6 +384,7 @@ def embed_batch(
             canary_size,
             max_cost_usd,
             project_canary_cost=True,
+            paid_request_cost_bound=fallback_request_bound,
         )
 
     try:
@@ -333,6 +399,15 @@ def embed_batch(
         )
     except ModelUnavailable:
         estimate = estimate_cost(fallback_model, len(records))
+        if (
+            not isinstance(estimate, (int, float))
+            or isinstance(estimate, bool)
+            or not math.isfinite(estimate)
+            or estimate < 0
+        ):
+            raise PaidLimitExceeded("Fallback cost estimate must be a finite non-negative number")
+        if paid_fallback:
+            estimate = max(estimate, estimate_fallback_cost(fallback_model, len(records)))
         if estimate > max_cost_usd:
             raise PaidLimitExceeded(
                 f"Estimated {fallback_model} cost ${estimate:.4f} exceeds ${max_cost_usd:.4f} cap"
@@ -349,17 +424,5 @@ def embed_batch(
         canary_size,
         max_cost_usd,
         project_canary_cost=True,
-    )
-
-
-def write_embeddings(batch: EmbeddingBatch, output_path: Path) -> None:
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(
-        json.dumps(
-            {"model": batch.model, "costUsd": batch.cost_usd, "vectors": batch.vectors},
-            ensure_ascii=False,
-            separators=(",", ":"),
-        )
-        + "\n",
-        encoding="utf-8",
+        paid_request_cost_bound=fallback_request_bound,
     )

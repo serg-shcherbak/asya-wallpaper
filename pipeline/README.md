@@ -11,7 +11,7 @@ python3.11 -m venv .venv
 .venv/bin/pip install -r pipeline/requirements.txt
 ```
 
-Copy `.env.example` to `.env` and set `OPENROUTER_API_KEY`. The primary model is `nvidia/llama-nemotron-embed-vl-1b-v2:free`; an unavailable primary causes a whole-batch restart with `google/gemini-embedding-2`. A release never mixes model spaces. Paid fallback is guarded by `OPENROUTER_MAX_COST_USD` (default `0.45`), a canary projection, observed usage, and a model-keyed cache.
+Copy `.env.example` to `.env` and set `OPENROUTER_API_KEY`. The primary model is `nvidia/llama-nemotron-embed-vl-1b-v2:free`; an unavailable primary causes a whole-batch restart with `google/gemini-embedding-2`. A release never mixes model spaces. Paid fallback is guarded by `OPENROUTER_MAX_COST_USD` (default `0.45`), a conservative per-image-token bound before each uncached request, a canary projection, valid observed usage cost, and a model-keyed cache.
 
 ## Build
 

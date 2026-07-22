@@ -14,6 +14,8 @@ test("reduced pointer flow reaches an island and returns with marks intact", asy
   await reveal.getByRole("button", { name: "Продолжить смотреть" }).click();
   await expect(reveal).toBeHidden();
   await expect(samples.first()).toHaveAttribute("aria-pressed", "true");
+  await samples.nth(6).click();
+  await expect(reveal).toBeHidden();
 });
 
 test("reduced flow works by keyboard and has no critical accessibility violations", async ({ page }) => {
