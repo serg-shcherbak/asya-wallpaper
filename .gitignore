@@ -6,6 +6,7 @@ node_modules/
 .pnpm-store/
 .next/
 out/
+.vercel/
 playwright-report/
 test-results/
 coverage/
