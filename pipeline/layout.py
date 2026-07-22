@@ -28,7 +28,7 @@ def project_embeddings(vectors: np.ndarray, *, seed: int = 41) -> np.ndarray:
 
     reducer = umap.UMAP(
         n_components=2,
-        n_neighbors=min(12, len(matrix) - 1),
+        n_neighbors=min(12, max(2, int(np.sqrt(len(matrix))))),
         min_dist=0.18,
         metric="cosine",
         output_metric="haversine",
