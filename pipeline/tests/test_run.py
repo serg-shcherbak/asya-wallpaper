@@ -73,6 +73,7 @@ def _run_expanded_release(
         n_clusters=3,
         max_spread_radians=2.0,
         tier_sizes={"sm": 16, "md": 32, "lg": 48},
+        reconcile_registry=True,
     )
 
 
