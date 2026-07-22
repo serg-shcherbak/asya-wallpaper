@@ -1,0 +1,10 @@
+.env
+.env.*
+.venv
+.github
+docs
+e2e
+pipeline
+playwright-report
+test-results
+Обои
