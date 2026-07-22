@@ -89,6 +89,7 @@ def run_pipeline(
     max_cost_usd: float = 0.45,
     max_spread_radians: float = 1.05,
     seed: int = 41,
+    reconcile_registry: bool = False,
 ) -> PipelineResult:
     work_root.mkdir(parents=True, exist_ok=True)
     cache_root = work_root.parent / "cache"
@@ -123,6 +124,12 @@ def run_pipeline(
             if existing_islands_path.exists()
             else []
         )
+        existing_layout_path = public_root / "data" / "layout.json"
+        existing_layout = (
+            json.loads(existing_layout_path.read_text(encoding="utf-8"))
+            if existing_layout_path.exists()
+            else []
+        )
         island_build = assign_islands(
             pre_island_layout,
             batch.vectors,
@@ -131,6 +138,8 @@ def run_pipeline(
             max_spread_radians=max_spread_radians,
             seed=seed,
             existing_islands=existing_islands,
+            existing_layout=existing_layout,
+            reconcile_registry=reconcile_registry,
         )
         write_island_artifacts(
             island_build,
@@ -166,6 +175,11 @@ def main() -> None:
     parser.add_argument("--registry", type=Path, default=Path("pipeline/island_ids.json"))
     parser.add_argument("--limit", type=int)
     parser.add_argument("--clusters", type=int)
+    parser.add_argument(
+        "--reconcile-registry",
+        action="store_true",
+        help="Re-anchor stable island ids by prior-layout overlap after a reviewed anchor collision",
+    )
     args = parser.parse_args()
     max_cost = float(os.getenv("OPENROUTER_MAX_COST_USD", "0.45"))
     result = run_pipeline(
@@ -176,6 +190,7 @@ def main() -> None:
         limit=args.limit,
         n_clusters=args.clusters,
         max_cost_usd=max_cost,
+        reconcile_registry=args.reconcile_registry,
     )
     print(
         f"samples={result.sample_count} islands={result.island_count} "

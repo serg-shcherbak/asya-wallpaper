@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from pipeline.islands import AnchorRegistryError, assign_islands, max_angular_spread
+from pipeline.islands import AnchorRegistryError, assign_islands, max_angular_spread, reconcile_public_ids
 
 
 def make_data(groups: int = 3, per_group: int = 5):
@@ -116,3 +116,135 @@ def test_contour_gate_reclusters_spatially_scattered_embedding_groups(tmp_path: 
             if record["islandId"] == island["id"]
         ]
         assert max_angular_spread(np.asarray(members)) <= 0.5
+
+
+def test_explicit_reconciliation_moves_colliding_anchor_by_prior_overlap(tmp_path: Path) -> None:
+    registry = tmp_path / "island_ids.json"
+    registry.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "islands": [
+                    {"id": "island-a", "anchors": ["a1"]},
+                    {"id": "island-b", "anchors": ["b1"]},
+                ],
+            }
+        )
+    )
+    sample_ids = ["a1", "a2", "a3", "b1", "b2", "b3"]
+    labels = np.asarray([0, 0, 1, 0, 1, 1])
+    existing_layout = [
+        {"id": sample_id, "islandId": "island-a" if sample_id.startswith("a") else "island-b"}
+        for sample_id in sample_ids
+    ]
+
+    public_by_label, entries = reconcile_public_ids(sample_ids, labels, registry, existing_layout)
+
+    assert public_by_label == {0: "island-a", 1: "island-b"}
+    assert entries == [
+        {"id": "island-a", "anchors": ["a1"]},
+        {"id": "island-b", "anchors": ["b2"]},
+    ]
+
+
+def test_explicit_reconciliation_rejects_an_ambiguous_mapping(tmp_path: Path) -> None:
+    registry = tmp_path / "island_ids.json"
+    registry.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "islands": [
+                    {"id": "island-a", "anchors": ["a1"]},
+                    {"id": "island-b", "anchors": ["b1"]},
+                ],
+            }
+        )
+    )
+    sample_ids = ["a1", "a2", "b1", "b2"]
+    labels = np.asarray([0, 1, 0, 1])
+    existing_layout = [
+        {"id": sample_id, "islandId": "island-a" if sample_id.startswith("a") else "island-b"}
+        for sample_id in sample_ids
+    ]
+
+    with pytest.raises(AnchorRegistryError, match="ambiguous"):
+        reconcile_public_ids(sample_ids, labels, registry, existing_layout)
+
+
+def test_explicit_reconciliation_uses_embedding_similarity_for_an_orphan_id(tmp_path: Path) -> None:
+    registry = tmp_path / "island_ids.json"
+    registry.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "islands": [
+                    {"id": "island-a", "anchors": ["a1"]},
+                    {"id": "island-b", "anchors": ["b1"]},
+                ],
+            }
+        )
+    )
+    sample_ids = ["a1", "b1", "new"]
+    labels = np.asarray([0, 0, 1])
+    existing_layout = [
+        {"id": "a1", "islandId": "island-a"},
+        {"id": "b1", "islandId": "island-b"},
+    ]
+    vectors = {
+        "a1": [1.0, 0.0],
+        "b1": [0.0, 1.0],
+        "new": [0.0, 0.99],
+    }
+
+    public_by_label, _ = reconcile_public_ids(sample_ids, labels, registry, existing_layout, vectors)
+
+    assert public_by_label == {0: "island-a", 1: "island-b"}
+
+
+def test_explicit_reconciliation_preserves_old_ids_while_adding_a_new_island(tmp_path: Path) -> None:
+    registry = tmp_path / "island_ids.json"
+    registry.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "islands": [
+                    {"id": "island-a", "anchors": ["a1"]},
+                    {"id": "island-b", "anchors": ["b1"]},
+                ],
+            }
+        )
+    )
+    sample_ids = ["a1", "b1", "new"]
+    labels = np.asarray([0, 1, 2])
+    existing_layout = [
+        {"id": "a1", "islandId": "island-a"},
+        {"id": "b1", "islandId": "island-b"},
+    ]
+
+    public_by_label, entries = reconcile_public_ids(sample_ids, labels, registry, existing_layout)
+
+    assert public_by_label[0] == "island-a"
+    assert public_by_label[1] == "island-b"
+    assert public_by_label[2].startswith("island-")
+    assert len(entries) == 3
+
+
+def test_expansion_skips_an_anchor_hash_already_used_by_an_old_public_id(tmp_path: Path) -> None:
+    registry = tmp_path / "island_ids.json"
+    registry.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "islands": [
+                    {"id": "island-11507a0e", "anchors": ["old"]},
+                ],
+            }
+        )
+    )
+    sample_ids = ["old", "new", "spare"]
+    labels = np.asarray([0, 1, 1])
+    existing_layout = [{"id": "old", "islandId": "island-11507a0e"}]
+
+    public_by_label, _ = reconcile_public_ids(sample_ids, labels, registry, existing_layout)
+
+    assert len(set(public_by_label.values())) == 2
