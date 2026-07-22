@@ -14,7 +14,7 @@ import { loadPlanetariumData } from "@/lib/data";
 import { buildIslandCollection, resolveTasteIsland } from "@/lib/island";
 import { selectQuality } from "@/lib/quality";
 import { useSelectionStore } from "@/lib/selection";
-import { shareIsland } from "@/lib/share";
+import { shareIsland, type ShareStatus } from "@/lib/share";
 import type { PlanetariumData } from "@/lib/types";
 
 const PlanetariumScene = dynamic(
@@ -40,7 +40,7 @@ export function PlanetariumExperience() {
   const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
   const [capabilities, setCapabilities] = useState<CapabilityResult | null>(null);
   const [focusedId, setFocusedId] = useState<string | null>(null);
-  const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "shared" | "error">("idle");
+  const [shareStatus, setShareStatus] = useState<ShareStatus>("idle");
   const selectedIds = useSelectionStore((state) => state.selectedIds);
   const revealOpen = useSelectionStore((state) => state.revealOpen);
   const toggle = useSelectionStore((state) => state.toggle);

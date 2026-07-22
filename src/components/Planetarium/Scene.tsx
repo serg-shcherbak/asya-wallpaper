@@ -63,6 +63,7 @@ function Wallpaper({
   useEffect(() => {
     if (!source) return;
     let active = true;
+    let activeTexture: Texture | null = null;
     const loader = new TextureLoader();
     loader.load(
       source,
@@ -72,6 +73,7 @@ function Wallpaper({
           return;
         }
         loaded.colorSpace = SRGBColorSpace;
+        activeTexture = loaded;
         setLoaded({ source, texture: loaded, failed: false });
       },
       undefined,
@@ -83,10 +85,9 @@ function Wallpaper({
     );
     return () => {
       active = false;
+      activeTexture?.dispose();
     };
   }, [source]);
-
-  useEffect(() => () => loaded?.texture?.dispose(), [loaded]);
 
   useFrame((_, delta) => {
     if (!group.current) return;
@@ -159,7 +160,7 @@ function World({
   onToggle: (id: string) => void;
 }) {
   const density = quality === "high" ? samples.length : quality === "medium" ? Math.ceil(samples.length * 0.78) : Math.ceil(samples.length * 0.48);
-  const visibleSamples = samples.slice(0, density);
+  const visibleSamples = useMemo(() => samples.slice(0, density), [samples, density]);
   const lods = useMemo(
     () => allocateLods(visibleSamples, focusedId, quality === "high" ? 10 : quality === "medium" ? 6 : 3),
     [visibleSamples, focusedId, quality],

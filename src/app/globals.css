@@ -309,6 +309,7 @@ a:focus-visible {
 
 .static-result {
   position: relative;
+  height: 100dvh;
   overflow: auto;
   background: var(--ink);
 }

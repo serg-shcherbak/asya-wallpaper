@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { shareIsland } from "@/lib/share";
+import { shareIsland, shareStatusLabel, type ShareStatus } from "@/lib/share";
 
 export function ResultActions({
   islandId,
@@ -13,7 +13,7 @@ export function ResultActions({
   islandName: string;
   contactUrl: string | null;
 }) {
-  const [status, setStatus] = useState<"idle" | "copied" | "shared" | "error">("idle");
+  const [status, setStatus] = useState<ShareStatus>("idle");
   const webContact = contactUrl?.startsWith("https:");
   return (
     <div className="result-actions">
@@ -41,7 +41,7 @@ export function ResultActions({
           }
         }}
       >
-        {status === "copied" ? "Ссылка скопирована" : status === "shared" ? "Открыто меню шэра" : "Поделиться"}
+        {shareStatusLabel(status)}
       </button>
     </div>
   );

@@ -163,8 +163,11 @@ def _embedding_for_record(
     image_path = public_root / srcset["md"].removeprefix("/")
     digest = _content_hash(image_path)
     cache_path = cache_root / _cache_namespace(model) / f"{digest}.json"
-    if cache_path.exists():
+    try:
         cached = json.loads(cache_path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        cached = None
+    if cached is not None:
         if cached.get("model") != model or not isinstance(cached.get("embedding"), list):
             raise EmbeddingError(f"Invalid model-keyed cache entry: {cache_path}")
         return [float(value) for value in cached["embedding"]], 0.0
@@ -213,10 +216,11 @@ def _run_model_batch(
     model: str,
     client: EmbeddingClient,
     max_cost_usd: float,
+    expected_dimension: int | None = None,
 ) -> EmbeddingBatch:
     vectors: dict[str, list[float]] = {}
     total_cost = 0.0
-    dimension: int | None = None
+    dimension = expected_dimension
     for record in records:
         vector, cost = _embedding_for_record(record, public_root, cache_root, model, client)
         if dimension is None:
@@ -265,13 +269,25 @@ def _canary_then_batch(
             raise PaidLimitExceeded(
                 f"Canary projects {model} batch at ${projected_cost:.4f}, above ${max_cost_usd:.4f} cap"
             )
+    remaining_records = records[len(canary_records) :]
+    if not remaining_records:
+        return canary
     remaining_cap = max_cost_usd - canary.cost_usd
-    full = _run_model_batch(records, public_root, cache_root, model, client, remaining_cap)
+    canary_dimension = len(next(iter(canary.vectors.values())))
+    remainder = _run_model_batch(
+        remaining_records,
+        public_root,
+        cache_root,
+        model,
+        client,
+        remaining_cap,
+        expected_dimension=canary_dimension,
+    )
     return EmbeddingBatch(
-        model=full.model,
-        vectors=full.vectors,
-        vector_models=full.vector_models,
-        cost_usd=canary.cost_usd + full.cost_usd,
+        model=remainder.model,
+        vectors={**canary.vectors, **remainder.vectors},
+        vector_models={**canary.vector_models, **remainder.vector_models},
+        cost_usd=canary.cost_usd + remainder.cost_usd,
     )
 
 

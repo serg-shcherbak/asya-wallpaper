@@ -137,7 +137,13 @@ def test_mismatched_embedding_dimensions_fail_closed(tmp_path: Path) -> None:
     records, public_root = make_records(tmp_path)
 
     with pytest.raises(EmbeddingError, match="dimension"):
-        embed_batch(records, public_root, tmp_path / "cache", client=FakeClient(wrong_dimension=True))
+        embed_batch(
+            records,
+            public_root,
+            tmp_path / "cache",
+            client=FakeClient(wrong_dimension=True),
+            canary_size=2,
+        )
 
 
 def test_openrouter_retries_only_transient_provider_errors(tmp_path: Path) -> None:

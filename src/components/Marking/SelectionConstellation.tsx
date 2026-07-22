@@ -1,8 +1,10 @@
+import { useMemo } from "react";
 import type { Sample } from "@/lib/types";
 
 export function SelectionConstellation({ samples, selectedIds }: { samples: Sample[]; selectedIds: string[] }) {
+  const samplesById = useMemo(() => new Map(samples.map((sample) => [sample.id, sample])), [samples]);
   const selected = selectedIds
-    .map((id) => samples.find((sample) => sample.id === id))
+    .map((id) => samplesById.get(id))
     .filter((sample): sample is Sample => Boolean(sample));
   if (!selected.length) return null;
   return (

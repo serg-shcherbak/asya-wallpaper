@@ -1,7 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
-import { canonicalResultUrl, shareIsland } from "../share";
+import { canonicalResultUrl, shareIsland, shareStatusLabel } from "../share";
 
 describe("result sharing", () => {
+  it("uses one label mapping for idle, success and retry states", () => {
+    expect(shareStatusLabel("idle")).toBe("Поделиться");
+    expect(shareStatusLabel("copied")).toBe("Ссылка скопирована");
+    expect(shareStatusLabel("shared")).toBe("Открыто меню шэра");
+    expect(shareStatusLabel("error")).toBe("Поделиться");
+  });
+
   it("builds a canonical static result path", () => {
     expect(canonicalResultUrl("island-a", "https://example.test/path")).toBe(
       "https://example.test/result/island-a/",
