@@ -3,8 +3,10 @@
 !.env.example
 .DS_Store
 node_modules/
+.pnpm-store/
 .next/
 out/
+.vercel/
 playwright-report/
 test-results/
 coverage/
@@ -16,4 +18,3 @@ __pycache__/
 pipeline/cache/
 pipeline/out/
 Обои/
-

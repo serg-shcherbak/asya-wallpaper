@@ -1,0 +1,14 @@
+[
+  {
+    "id": "sample-a",
+    "srcset": {
+      "sm": "/samples/sample-a/sm.webp",
+      "md": "/samples/sample-a/md.webp",
+      "lg": "/samples/sample-a/lg.webp"
+    },
+    "dominantColor": "#7c5962",
+    "pos": { "x": 1, "y": 0, "z": 0 },
+    "islandId": "island-a",
+    "islandAffinity": [{ "islandId": "island-a", "weight": 1 }]
+  }
+]
