@@ -3,7 +3,7 @@
 /* eslint-disable react-hooks/immutability -- R3F frame callbacks mutate Three.js camera objects by design. */
 
 import { useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Euler, Vector3 as ThreeVector3 } from "three";
 import type { Sample } from "@/lib/types";
 
@@ -44,10 +44,37 @@ type ViewControlsProps = {
   reducedMotion?: boolean;
 };
 
+export function getInitialViewAngles(samples: Sample[]) {
+  if (samples.length === 0) return { yaw: 0, pitch: 0 };
+
+  const groups = new Map<string, Sample[]>();
+  for (const sample of samples) {
+    const group = groups.get(sample.islandId) ?? [];
+    group.push(sample);
+    groups.set(sample.islandId, group);
+  }
+  const largestGroup = [...groups.entries()].sort(
+    ([leftId, left], [rightId, right]) => right.length - left.length || leftId.localeCompare(rightId),
+  )[0]?.[1] ?? [samples[0]];
+  const direction = largestGroup.reduce(
+    (total, sample) => total.add(new ThreeVector3(sample.pos.x, sample.pos.y, sample.pos.z)),
+    new ThreeVector3(),
+  );
+  if (direction.lengthSq() < 0.000001) {
+    direction.set(samples[0].pos.x, samples[0].pos.y, samples[0].pos.z);
+  }
+  direction.normalize();
+  return {
+    yaw: Math.atan2(-direction.x, -direction.z),
+    pitch: Math.asin(Math.max(-1, Math.min(1, direction.y))),
+  };
+}
+
 export function ViewControls({ samples, onFocusChange, onEnter, reducedMotion = false }: ViewControlsProps) {
   const { camera, gl } = useThree();
-  const yaw = useRef(0);
-  const pitch = useRef(0);
+  const initialView = useMemo(() => getInitialViewAngles(samples), [samples]);
+  const yaw = useRef(initialView.yaw);
+  const pitch = useRef(initialView.pitch);
   const fov = useRef(64);
   const velocity = useRef({ yaw: 0, pitch: 0 });
   const pointer = useRef<{ id: number; x: number; y: number } | null>(null);

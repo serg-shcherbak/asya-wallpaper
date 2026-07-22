@@ -4,6 +4,7 @@ import {
   clampFov,
   clampPitch,
   consumeFirstRunHint,
+  getInitialViewAngles,
   keyIntent,
   wrapYaw,
 } from "../Controls";
@@ -33,5 +34,16 @@ describe("inside-sphere controls", () => {
     const consumed = consumeFirstRunHint({ active: true, consumed: false });
     expect(consumed).toEqual({ active: false, consumed: true });
     expect(consumeFirstRunHint(consumed)).toEqual(consumed);
+  });
+
+  it("starts by facing the most populated island", () => {
+    const angles = getInitialViewAngles([
+      { id: "a", islandId: "warm", dominantColor: "#000000", srcset: { sm: "", md: "", lg: "" }, pos: { x: 1, y: 0, z: 0 } },
+      { id: "b", islandId: "warm", dominantColor: "#000000", srcset: { sm: "", md: "", lg: "" }, pos: { x: 0.9, y: 0, z: 0.1 } },
+      { id: "c", islandId: "cool", dominantColor: "#000000", srcset: { sm: "", md: "", lg: "" }, pos: { x: -1, y: 0, z: 0 } },
+    ]);
+
+    expect(angles.yaw).toBeCloseTo(-1.623, 2);
+    expect(angles.pitch).toBeCloseTo(0);
   });
 });

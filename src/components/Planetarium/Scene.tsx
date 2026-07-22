@@ -13,6 +13,32 @@ import { toSpherePosition } from "./sceneMath";
 
 const WORLD_RADIUS = 9;
 
+function WorldDust({ count = 260 }: { count?: number }) {
+  const positions = useMemo(() => {
+    const points = new Float32Array(count * 3);
+    const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+    for (let index = 0; index < count; index += 1) {
+      const y = 1 - (index / Math.max(1, count - 1)) * 2;
+      const radial = Math.sqrt(Math.max(0, 1 - y * y));
+      const theta = goldenAngle * index;
+      const radius = 8.1 + ((index * 37) % 23) / 30;
+      points[index * 3] = Math.cos(theta) * radial * radius;
+      points[index * 3 + 1] = y * radius;
+      points[index * 3 + 2] = Math.sin(theta) * radial * radius;
+    }
+    return points;
+  }, [count]);
+
+  return (
+    <points>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+      </bufferGeometry>
+      <pointsMaterial color="#d8ced2" size={0.026} transparent opacity={0.32} depthWrite={false} toneMapped={false} />
+    </points>
+  );
+}
+
 function Wallpaper({
   sample,
   lod,
@@ -78,6 +104,12 @@ function Wallpaper({
   return (
     <Billboard position={toSpherePosition(sample.pos, WORLD_RADIUS)} follow>
       <group ref={group}>
+        {lod !== "color" ? (
+          <mesh position={[0, 0, -0.018]} scale={1.055}>
+            <planeGeometry args={[1.1, 1.1]} />
+            <meshBasicMaterial color={sample.dominantColor} toneMapped={false} />
+          </mesh>
+        ) : null}
         <mesh
           onClick={onClick}
           onPointerOver={(event) => {
@@ -86,9 +118,10 @@ function Wallpaper({
           }}
           onPointerOut={() => onHover(null)}
         >
-          <planeGeometry args={[lod === "color" ? 0.34 : 1.1, lod === "color" ? 0.34 : 1.1]} />
+          <planeGeometry args={[lod === "color" ? 0.46 : 1.1, lod === "color" ? 0.46 : 1.1]} />
           <meshBasicMaterial
-            color={texture && !textureFailed ? "#ffffff" : sample.dominantColor}
+            key={texture ? `texture-${source}` : `color-${source ?? sample.id}`}
+            color={texture && !textureFailed ? "#f5f0eb" : sample.dominantColor}
             map={textureFailed ? null : texture}
             transparent
             opacity={lod === "color" ? 0.74 : 0.96}
@@ -139,6 +172,7 @@ function World({
         <sphereGeometry args={[1, 32, 32]} />
         <meshBasicMaterial color="#08070a" side={BackSide} />
       </mesh>
+      <WorldDust count={quality === "high" ? 320 : quality === "medium" ? 240 : 150} />
       <Nebula islands={islands} radius={WORLD_RADIUS} reducedMotion={reducedMotion} />
       {visibleSamples.map((sample) => (
         <Wallpaper

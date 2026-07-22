@@ -1,3 +1,5 @@
+import { PlanetariumExperience } from "@/components/Planetarium/Experience";
+
 export default function Home() {
-  return <main className="shell" aria-label="Планетарий вкуса" />;
+  return <PlanetariumExperience />;
 }
